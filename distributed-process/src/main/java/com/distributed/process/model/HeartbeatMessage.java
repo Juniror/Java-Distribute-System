@@ -1,19 +1,23 @@
 package com.distributed.process.model;
 
-//Heartbeat Message ที่ส่งผ่าน Redis Pub/Sub ใช้ส่งข้อมูลว่า process ยังมีชีวิตอยู่
+/*
+    Heartbeat message ที่ส่งระหว่าง process
+ */
 public class HeartbeatMessage {
-    private String processId;       // PID ของผู้ส่ง
-    private long timestamp;         // เวลาที่ส่ง heartbeat
-    private String status;          // สถานะ (alive, boss, etc.)
+    private int processId;
+    private long timestamp;
+    private String status; // "ALIVE", "DEAD", "ELECTION", "BOSS"
 
-    public HeartbeatMessage(String processId) {
+    public HeartbeatMessage() {}
+
+    public HeartbeatMessage(int processId, long timestamp, String status) {
         this.processId = processId;
-        this.timestamp = System.currentTimeMillis();
-        this.status = "alive";
+        this.timestamp = timestamp;
+        this.status = status;
     }
 
-    public String getProcessId() { return processId; }
-    public void setProcessId(String processId) { this.processId = processId; }
+    public int getProcessId() { return processId; }
+    public void setProcessId(int processId) { this.processId = processId; }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
@@ -23,7 +27,6 @@ public class HeartbeatMessage {
 
     @Override
     public String toString() {
-        return String.format("Heartbeat[PID=%s, Time=%d, Status=%s]",
-                processId, timestamp, status);
+        return String.format("Process[%d] %s at %d", processId, status, timestamp);
     }
 }

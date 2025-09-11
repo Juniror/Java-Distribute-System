@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
- //จัดการการเชื่อมต่อ Redis สำหรับ Pub/Sub communication
+ //จัดการการเชื่อมต่อ Redis Pub/Sub communication
 public class RedisConfig {
     private static final Logger logger = LoggerFactory.getLogger(RedisConfig.class);
 
