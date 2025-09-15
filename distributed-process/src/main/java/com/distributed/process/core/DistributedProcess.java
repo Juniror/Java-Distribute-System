@@ -1,6 +1,7 @@
 package com.distributed.process.core;
 
 import com.distributed.process.config.RedisConfig;
+import com.distributed.process.model.CustomMessage;
 import com.distributed.process.model.HeartbeatMessage;
 import com.distributed.process.model.ElectionMessage;
 import com.google.gson.Gson;
@@ -23,6 +24,7 @@ public class DistributedProcess {
     // Redis channels
     private static final String HEARTBEAT_CHANNEL = "heartbeat";
     private static final String ELECTION_CHANNEL = "election";
+    private  static  final String CUSTOMM_CHANNEL = "custom";
 
     // Process configuration
     private final int processId;
@@ -107,7 +109,9 @@ public class DistributedProcess {
                     @Override
                     public void onMessage(String channel, String message) {
                         try {
-                            if (HEARTBEAT_CHANNEL.equals(channel)) {
+                            if (CUSTOMM_CHANNEL.equals(channel)){
+                                handleCustomMessage(message);
+                            } else if (HEARTBEAT_CHANNEL.equals(channel)) {
                                 handleHeartbeatMessage(message);
                             } else if (ELECTION_CHANNEL.equals(channel)) {
                                 handleElectionMessage(message);
@@ -116,7 +120,7 @@ public class DistributedProcess {
                             logger.error("Error processing message in Process {}: {}", processId, e.getMessage());
                         }
                     }
-                }, HEARTBEAT_CHANNEL, ELECTION_CHANNEL);
+                }, HEARTBEAT_CHANNEL, ELECTION_CHANNEL,CUSTOMM_CHANNEL);
             } catch (Exception e) {
                 logger.error("Message listener error in Process {}: {}", processId, e.getMessage());
             }
@@ -170,7 +174,6 @@ public class DistributedProcess {
             }
         }, 5000, 5000, TimeUnit.MILLISECONDS);
     }
-
     //จัดการ heartbeat message ที่ได้รับ
     private void handleHeartbeatMessage(String message) {
         try {
@@ -250,6 +253,7 @@ public class DistributedProcess {
         electionInProgress.set(false);
     }
 
+
     //เริ่มต้น Boss Election (Bully Algorithm)
     private void initiateElection() {
         if (!electionInProgress.compareAndSet(false, true)) {
@@ -294,6 +298,26 @@ public class DistributedProcess {
 
         // ประกาศเป็น COORDINATOR
         sendElectionMessage("COORDINATOR");
+    }
+    private void handleCustomMessage(String message) {
+        CustomMessage customMessage = gson.fromJson(message,CustomMessage.class);
+        if (customMessage.getType().equals("REQUEST") ){
+            // ถ้าหากตัวนีน้เป็นบอส
+            if (getCurrentBoss() == processId && customMessage.getProcessId() == processId){
+                customMessage.setType("BROARDCAST");
+                sendCustomMessage(customMessage);
+            }
+        }else if (customMessage.getType().equals("BROARDCAST")){
+            if (processId != customMessage.getProcessId()){
+                logger.info("message : {}",customMessage.getMessage());
+            }
+        }
+    }
+    public void sendCustomMessage(CustomMessage customMessage) {
+        try(Jedis jedis = RedisConfig.getJedis()) {
+            jedis.publish(CUSTOMM_CHANNEL,gson.toJson(customMessage));
+            logger.info("Process {} send custom message : {}",customMessage.getProcessId(),customMessage.getMessage());
+        }
     }
 
     //ส่ง election message ผ่าน Redis
@@ -346,7 +370,6 @@ public class DistributedProcess {
 
         logger.info("Process {} shutdown complete", processId);
     }
-
     public int getProcessId() { return processId; }
     public int getCurrentBoss() { return currentBoss.get(); }
     public boolean isElectionInProgress() { return electionInProgress.get(); }

@@ -6,6 +6,7 @@ public class ElectionMessage {
     private String messageType; // "ELECTION", "ANSWER", "COORDINATOR"
     private long timestamp;
 
+
     public ElectionMessage() {}
 
     public ElectionMessage(int processId, String messageType, long timestamp) {
