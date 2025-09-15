@@ -5,6 +5,9 @@
     import org.slf4j.LoggerFactory;
     import redis.clients.jedis.Jedis;
     import com.google.gson.Gson;
+
+    import java.io.FileReader;
+    import java.io.IOException;
     import java.util.Scanner;
     import org.slf4j.Logger;
 
@@ -13,19 +16,19 @@
 
             Scanner sc = new Scanner(System.in);
             RedisConfig.initialize();
-            int processID;
+            int processID = 0;
 
             Logger logger = LoggerFactory.getLogger(CommandSend.class);
             Gson gson = new Gson();
 
-            // รับค่าจาก args ถ้าไม่มีรับผ่าน scanner
-            try {
-                processID = Integer.parseInt(args[0]);
+            try (Scanner fileScanner = new Scanner(new java.io.File("processID.txt"))) {
+                if (fileScanner.hasNextInt()) {
+                    processID = fileScanner.nextInt();
+                }
+            } catch (IOException e) {
+                logger.error("Error reading processID.txt: {}", e.getMessage());
             }
-           catch (Exception e) {
-               processID = sc.nextInt();
-               sc.nextLine();
-           }
+
 
             try (Jedis jedis = RedisConfig.getJedis()) {
                 while (true) {

@@ -5,6 +5,8 @@ import com.distributed.process.config.RedisConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
 
 /*
@@ -17,7 +19,11 @@ public class Main {
     public static void main(String[] args) {
         // รับ Process ID จาก command line หรือ input
         int processId = getProcessId(args);
-
+        try (FileWriter fileWriter = new FileWriter("processID.txt",false)){
+            fileWriter.write(String.valueOf(processId));
+        }catch (IOException e){
+            logger.error("{}",e.getMessage());
+        }
         logger.info("Starting Distributed Process System - Process {}", processId);
 
         // สร้างและเริ่ม process
